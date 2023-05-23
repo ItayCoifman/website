@@ -49,56 +49,74 @@
       <label for="fileInput">Choose File</label>
       <button onclick="uploadFile()">Upload</button>
     </div>
-    <script>
-      // Load the Google Drive API client library
-      gapi.load('client', initClient);
+      <script>
+    const CLIENT_ID = '924258763370-v088pqs6rgrbrtj41cqbham54a162hl4.apps.googleusercontent.com';
+    const CLIENT_SECRET = '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';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    const REDIRECT_URI = window.location.origin + '/oauth2callback';
 
-      // Initialize the Google Drive API client
-      function initClient() {
-        gapi.client.init({
-          apiKey: 'AIzaSyChqZRwaJtMFezNwR5LvQs5OgY2N0c57oM',
-          clientId: '924258763370-v088pqs6rgrbrtj41cqbham54a162hl4.apps.googleusercontent.com',
-          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-          scope: 'https://www.googleapis.com/auth/drive.file',
-        }).then(() => {
-          console.log('Google Drive API initialized');
-        }).catch((error) => {
-          console.error('Error initializing Google Drive API:', error);
+    function handleAuthResult(authResult) {
+      if (authResult && !authResult.error) {
+        loadDriveAPI();
+      } else {
+        console.error('Authorization error:', authResult.error);
+      }
+    }
+
+    function handleAuthClick() {
+      gapi.auth.authorize(
+        { client_id: CLIENT_ID, scope: SCOPES, immediate: false, redirect_uri: REDIRECT_URI },
+        handleAuthResult
+      );
+    }
+
+    function loadDriveAPI() {
+      gapi.client.load('drive', 'v3', () => {
+        console.log('Google Drive API loaded.');
+      });
+    }
+
+    function uploadFile(file) {
+      const metadata = {
+        name: file.name,
+        mimeType: file.type,
+        parents: ['https://drive.google.com/drive/folders/1RuWaX7smjSdF7EhM0VGtGsaDJndR4WA6?usp=share_link']  // Replace with the desired parent directory ID
+      };
+	  const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target.result;
+        const boundary = '-------314159265358979323846';
+        const delimiter = "\r\n--" + boundary + "\r\n";
+        const closeDelimiter = "\r\n--" + boundary + "--";
+
+        const requestBody =
+          delimiter +
+          'Content-Type: application/json\r\n\r\n' +
+          JSON.stringify(metadata) +
+          delimiter +
+          'Content-Type: ' + file.type + '\r\n' +
+          'Content-Transfer-Encoding: base64\r\n' +
+          '\r\n' +
+          data.replace(/^.*?,/, '') +
+          closeDelimiter;
+
+        const request = gapi.client.request({
+          path: '/upload/drive/v3/files',
+          method: 'POST',
+          params: { uploadType: 'multipart' },
+          headers: {
+            'Content-Type': 'multipart/related; boundary=' + boundary,
+          },
+          body: requestBody
         });
-      }
 
-      // Upload the selected file to Google Drive
-      function uploadFile() {
-        const fileInput = document.getElementById('fileInput');
-        const file = fileInput.files[0];
-        const metadata = {
-          name: file.name,
-          parents: ['https://drive.google.com/drive/folders/1RuWaX7smjSdF7EhM0VGtGsaDJndR4WA6?usp=share_link'],
-        };
-        const reader = new FileReader();
+        request.execute((response) => {
+          console.log('File uploaded successfully:', response);
+        });
+      };
 
-        reader.onload = (event) => {
-          const base64Data = event.target.result.split(',')[1];
-          const data = new Uint8Array(atob(base64Data).split('').map((char) => char.charCodeAt(0)));
-
-          const blob = new Blob([data], { type: file.type });
-
-          const uploadRequest = gapi.client.drive.files.create({
-            resource: metadata,
-            media: {
-              mimeType: file.type,
-              body: blob,
-            },
-          });
-
-          uploadRequest.execute((response) => {
-            console.log('File uploaded successfully:', response);
-            // Perform any further actions on successful upload
-          });
-        };
-
-        reader.readAsDataURL(file);
-      }
-    </script>
+      reader.readAsDataURL(file);
+    }
+  </script>
   </body>
 </html>
