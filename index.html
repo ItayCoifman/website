@@ -81,33 +81,55 @@
       }
 
       function uploadFile() {
-        const fileInput = document.getElementById('fileInput');
-        const file = fileInput.files[0];
-        if (!file) {
-          console.error('No file selected.');
-          return;
-        }
+  const fileInput = document.getElementById('fileInput');
+  const file = fileInput.files[0];
+  if (!file) {
+    console.error('No file selected.');
+    return;
+  }
 
-        const metadata = {
-          name: file.name,
-          mimeType: file.type,
-          parents: ['https://drive.google.com/drive/folders/1RuWaX7smjSdF7EhM0VGtGsaDJndR4WA6?usp=share_link'] // Replace with the desired parent directory ID
-        };
+  const metadata = {
+    name: file.name,
+    mimeType: file.type,
+    parents: ['1RuWaX7smjSdF7EhM0VGtGsaDJndR4WA6'] // Replace with the desired parent directory ID
+  };
 
-        const request = gapi.client.request({
-          path: '/upload/drive/v3/files',
-          method: 'POST',
-          params: { uploadType: 'media' },
-          headers: {
-            'Content-Type': file.type,
-          },
-          body: file
-        });
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const data = e.target.result;
+    const boundary = '-------314159265358979323846';
+    const delimiter = "\r\n--" + boundary + "\r\n";
+    const closeDelimiter = "\r\n--" + boundary + "--";
 
-        request.execute((response) => {
-          console.log('File uploaded successfully:', response);
-        });
-      }
+    const requestBody =
+      delimiter +
+      'Content-Type: application/json\r\n\r\n' +
+      JSON.stringify(metadata) +
+      delimiter +
+      'Content-Type: ' + file.type + '\r\n' +
+      'Content-Transfer-Encoding: base64\r\n' +
+      '\r\n' +
+      data.replace(/^.*?,/, '') +
+      closeDelimiter;
+
+    const request = gapi.client.request({
+      path: '/upload/drive/v3/files',
+      method: 'POST',
+      params: { uploadType: 'multipart' },
+      headers: {
+        'Content-Type': 'multipart/related; boundary=' + boundary,
+      },
+      body: requestBody
+    });
+
+    request.execute((response) => {
+      console.log('File uploaded successfully:', response);
+    });
+  };
+
+  reader.readAsDataURL(file);
+}
+
     </script>
     <script src="https://apis.google.com/js/client.js?onload=handleAuthClick"></script>
   </body>
