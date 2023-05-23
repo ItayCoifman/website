@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>File Upload to Google Drive</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      .file-upload-container {
+        margin-top: 20px;
+      }
+
+      .file-upload-container input[type="file"] {
+        display: none;
+      }
+
+      .file-upload-container label {
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: #fff;
+        cursor: pointer;
+      }
+
+      .file-upload-container button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+      }
+    </style>
+    <script src="https://apis.google.com/js/api.js"></script>
+  </head>
+  <body>
+    <h1>File Upload to Google Drive</h1>
+    <div class="file-upload-container">
+      <input type="file" id="fileInput">
+      <label for="fileInput">Choose File</label>
+      <button onclick="uploadFile()">Upload</button>
+    </div>
+    <script>
+      // Load the Google Drive API client library
+      gapi.load('client', initClient);
+
+      // Initialize the Google Drive API client
+      function initClient() {
+        gapi.client.init({
+          apiKey: 'AIzaSyChqZRwaJtMFezNwR5LvQs5OgY2N0c57oM',
+          clientId: '924258763370-vb4af8620mtabrrcsc4o7speg6b5btqn.apps.googleusercontent.com',
+          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+          scope: 'https://www.googleapis.com/auth/drive.file',
+        }).then(() => {
+          console.log('Google Drive API initialized');
+        }).catch((error) => {
+          console.error('Error initializing Google Drive API:', error);
+        });
+      }
+
+      // Upload the selected file to Google Drive
+      function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        const metadata = {
+          name: file.name,
+          parents: ['https://drive.google.com/drive/folders/1RuWaX7smjSdF7EhM0VGtGsaDJndR4WA6?usp=share_link'],
+        };
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+          const base64Data = event.target.result.split(',')[1];
+          const data = new Uint8Array(atob(base64Data).split('').map((char) => char.charCodeAt(0)));
+
+          const blob = new Blob([data], { type: file.type });
+
+          const uploadRequest = gapi.client.drive.files.create({
+            resource: metadata,
+            media: {
+              mimeType: file.type,
+              body: blob,
+            },
+          });
+
+          uploadRequest.execute((response) => {
+            console.log('File uploaded successfully:', response);
+            // Perform any further actions on successful upload
+          });
+        };
+
+        reader.readAsDataURL(file);
+      }
+    </script>
+  </body>
+</html>
