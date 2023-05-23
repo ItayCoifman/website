@@ -49,74 +49,66 @@
       <label for="fileInput">Choose File</label>
       <button onclick="uploadFile()">Upload</button>
     </div>
-      <script>
-    const CLIENT_ID = '924258763370-v088pqs6rgrbrtj41cqbham54a162hl4.apps.googleusercontent.com';
-    const CLIENT_SECRET = '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';
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-    const REDIRECT_URI = window.location.origin + '/oauth2callback';
+    <script>
+      const CLIENT_ID = '924258763370-v088pqs6rgrbrtj41cqbham54a162hl4.apps.googleusercontent.com';
+      const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+      const REDIRECT_URI = 'https://itaycoifman.github.io/oauth2callback';
 
-    function handleAuthResult(authResult) {
-      if (authResult && !authResult.error) {
-        loadDriveAPI();
-      } else {
-        console.error('Authorization error:', authResult.error);
+      function handleAuthResult(authResult) {
+        if (authResult && !authResult.error) {
+          loadDriveAPI();
+        } else {
+          console.error('Authorization error:', authResult.error);
+        }
       }
-    }
 
-    function handleAuthClick() {
-      gapi.auth.authorize(
-        { client_id: CLIENT_ID, scope: SCOPES, immediate: false, redirect_uri: REDIRECT_URI },
-        handleAuthResult
-      );
-    }
+      function handleAuthClick() {
+        gapi.auth.authorize(
+          {
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            immediate: false,
+            redirect_uri: REDIRECT_URI
+          },
+          handleAuthResult
+        );
+      }
 
-    function loadDriveAPI() {
-      gapi.client.load('drive', 'v3', () => {
-        console.log('Google Drive API loaded.');
-      });
-    }
+      function loadDriveAPI() {
+        gapi.client.load('drive', 'v3', () => {
+          console.log('Google Drive API loaded.');
+        });
+      }
 
-    function uploadFile(file) {
-      const metadata = {
-        name: file.name,
-        mimeType: file.type,
-        parents: ['https://drive.google.com/drive/folders/1RuWaX7smjSdF7EhM0VGtGsaDJndR4WA6?usp=share_link']  // Replace with the desired parent directory ID
-      };
-	  const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = e.target.result;
-        const boundary = '-------314159265358979323846';
-        const delimiter = "\r\n--" + boundary + "\r\n";
-        const closeDelimiter = "\r\n--" + boundary + "--";
+      function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        if (!file) {
+          console.error('No file selected.');
+          return;
+        }
 
-        const requestBody =
-          delimiter +
-          'Content-Type: application/json\r\n\r\n' +
-          JSON.stringify(metadata) +
-          delimiter +
-          'Content-Type: ' + file.type + '\r\n' +
-          'Content-Transfer-Encoding: base64\r\n' +
-          '\r\n' +
-          data.replace(/^.*?,/, '') +
-          closeDelimiter;
+        const metadata = {
+          name: file.name,
+          mimeType: file.type,
+          parents: ['https://drive.google.com/drive/folders/1RuWaX7smjSdF7EhM0VGtGsaDJndR4WA6?usp=share_link'] // Replace with the desired parent directory ID
+        };
 
         const request = gapi.client.request({
           path: '/upload/drive/v3/files',
           method: 'POST',
-          params: { uploadType: 'multipart' },
+          params: { uploadType: 'media' },
           headers: {
-            'Content-Type': 'multipart/related; boundary=' + boundary,
+            'Content-Type': file.type,
           },
-          body: requestBody
+          body: file
         });
 
         request.execute((response) => {
           console.log('File uploaded successfully:', response);
         });
-      };
-
-      reader.readAsDataURL(file);
-    }
-  </script>
+      }
+    </script>
+    <script src="https://apis.google.com/js/client.js?onload=handleAuthClick"></script>
   </body>
 </html>
