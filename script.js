@@ -1,5 +1,6 @@
-const CLIENT_ID = '924258763370-v088pqs6rgrbrtj41cqbham54a162hl4.apps.googleusercontent.com';
-const REDIRECT_URI = 'https://itaycoifman.github.io/oauth2callback';
+const CLIENT_ID = '924258763370-vb4af8620mtabrrcsc4o7speg6b5btqn.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const REDIRECT_URI = 'https://itaycoifman.github.io/website/oauth2callback';
 
 function handleAuthResult(authResult) {
   if (authResult && !authResult.error) {
